@@ -1,43 +1,59 @@
 package ru.practicum;
 
-import io.restassured.RestAssured;
-import org.junit.Before;
+import io.qameta.allure.*;
+import io.qameta.allure.junit4.DisplayName;
 import org.junit.Test;
+import org.junit.runners.Suite;
 
 public class CourierTest {
 
-    private final  CourierGenerator courierGenerator = new CourierGenerator();
+    private final CourierGenerator courierGenerator = new CourierGenerator();
     private final CourierClient client = new CourierClient();
-
-    @Before
-    public void setUp() {
-//        RestAssured.baseURI= "https://qa-mesto.praktikum-services.ru";
-    }
+    private final CourierAssertions courierAssertions = new CourierAssertions();
 
 
-    @Test
-    public void testCreateCourier(){
+    @Test //создание курьера
+    @Story("Storyннннннннн")
+    @DisplayName("Создание курьера")
+    @Description("Проверка успешного создания курьера")
+    public void testCreateCourier() {
         var courier = courierGenerator.genericRand();
-        boolean isClient = client.createCourier(courier)
-                .assertThat()
-                .statusCode(201)
-                .extract()
-                .path("ok");
-        assert isClient;
+        courierAssertions.createdSuccessful(client.createCourier(courier));
     }
 
+    @Test // создание дубликата курьера
+    @DisplayName("Создание существующего курьера - Проверка вывода ошибки")
+    public void testCreateCourierCheckDuplicate() {
+        var courier = courierGenerator.generic();
+        courierAssertions.createCheckConflict(client.createCourier(courier));
+    }
 
-    @Test
+    @Test // проверка обязательных полей
+    @DisplayName("Создание курьера - Проверка обязательных полей")
+    public void testCreateCourierCheckRequiredFields() {
+        var courier = courierGenerator.emptyFields();
+        courierAssertions.createCheckBadRequest(client.createCourier(courier));
+    }
+
+    @Test  // авторизация курьера
+    @DisplayName("Успешная авторизация курьера")
     public void testLoginTest() {
         var courier = courierGenerator.generic();
-        int isClient = client.loginCourier(courier)
-                .assertThat()
-                .statusCode(200)
-                .extract()
-                .path("id");
-        assert isClient !=0;
+        courierAssertions.loginSuccessful(client.loginCourier(courier));
+    }
 
+    @Test //для авторизации нужно передать все обязательные поля
+    @DisplayName("Проверка авторизации курьера - Проверка обязательных полей")
+    public void testLoginTestFailed() {
+        var courier = courierGenerator.emptyFields();
+        courierAssertions.loginFailed(client.loginCourier(courier));
+    }
 
+    @Test  // авторизация курьера с некорректными данными
+    @DisplayName("Проверка корректности данных при авторизации курьера")
+    public void testLoginIncorrectData() {
+        var courier = courierGenerator.genericRand();
+        courierAssertions.notFound(client.loginCourier(courier));
     }
 
 }
